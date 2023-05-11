@@ -1,0 +1,528 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using eSyaInPatient.IF;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using eSyaInPatient.DO;
+using eSyaInPatient.DL.Entities;
+
+namespace eSyaInPatient.DL.Repository
+{
+    public class WardServicesRepository : IWardServicesRepository
+    {
+        #region Ward Master
+
+        public async Task<DO_ReturnParameter> InsertIntoWardMaster(DO_WardMaster obj)
+        {
+            using (var db = new eSyaEnterprise())
+            {
+                using (var dbContext = db.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        var isWardExist = db.GtEswrms.Where(x => x.WardDesc.ToUpper().Trim() == obj.WardDesc.ToUpper().Trim()).Count();
+                        if (isWardExist > 0)
+                        {
+                            return new DO_ReturnParameter() { Status = false, Message = "Ward Description already Exists" };
+                        }
+
+                        isWardExist = db.GtEswrms.Where(x => x.WardShortDesc.ToUpper().Trim() == obj.WardShortDesc.ToUpper().Trim()).Count();
+                        if (isWardExist > 0)
+                        {
+                            return new DO_ReturnParameter() { Status = false, Message = "Ward Short Description already Exists" };
+                        }
+
+                        int maxWardId = db.GtEswrms.Select(w => w.WardId).DefaultIfEmpty().Max();
+                        int WardId = maxWardId + 1;
+
+                        var wr_ms = new GtEswrms
+                        {
+                            WardId = WardId,
+                            WardShortDesc = obj.WardShortDesc.Trim(),
+                            WardDesc = obj.WardDesc.Trim(),
+                            ActiveStatus = obj.ActiveStatus,
+                            FormId = obj.FormId,
+                            CreatedBy = obj.UserID,
+                            CreatedOn = System.DateTime.Now,
+                            CreatedTerminal = obj.TerminalID,
+
+                        };
+                        db.GtEswrms.Add(wr_ms);
+
+                        await db.SaveChangesAsync();
+                        dbContext.Commit();
+                        return new DO_ReturnParameter() { Status = true, Message = "Ward Master Created Successfully."};
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        dbContext.Rollback();
+                        throw new Exception(CommonMethod.GetValidationMessageFromException(ex));
+                    }
+                    catch (Exception ex)
+                    {
+                        dbContext.Rollback();
+                        throw ex;
+                    }
+                }
+            }
+        }
+
+        public async Task<DO_ReturnParameter> UpdateWardMaster(DO_WardMaster obj)
+        {
+            using (var db = new eSyaEnterprise())
+            {
+                using (var dbContext = db.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        GtEswrms wr_ms = db.GtEswrms.Where(w => w.WardId == obj.WardId).FirstOrDefault();
+                        if (wr_ms == null)
+                        {
+                            return new DO_ReturnParameter() { Status = false, Message = "Ward Id does not exist." };
+                        }
+
+                        var isWardExist = db.GtEswrms.Where(x => x.WardDesc.ToUpper().Trim() == obj.WardDesc.ToUpper().Trim() && x.WardId != obj.WardId).Count();
+                        if (isWardExist > 0)
+                        {
+                            return new DO_ReturnParameter() { Status = false, Message = "Ward Description already Exists" };
+                        }
+
+                        isWardExist = db.GtEswrms.Where(x => x.WardShortDesc.ToUpper().Trim() == obj.WardShortDesc.ToUpper().Trim() && x.WardId != obj.WardId).Count();
+                        if (isWardExist > 0)
+                        {
+                            return new DO_ReturnParameter() { Status = false, Message = "Ward Short Description already Exists" };
+                        }
+
+                        wr_ms.WardDesc = obj.WardDesc.Trim();
+                        wr_ms.WardShortDesc = obj.WardShortDesc;
+                        wr_ms.ActiveStatus = obj.ActiveStatus;
+                        wr_ms.ModifiedBy = obj.UserID;
+                        wr_ms.ModifiedOn = System.DateTime.Now;
+                        wr_ms.ModifiedTerminal = obj.TerminalID;
+
+                        await db.SaveChangesAsync();
+                        dbContext.Commit();
+                        return new DO_ReturnParameter() { Status = true, Message = "Ward Master Updated Successfully." };
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        dbContext.Rollback();
+                        throw new Exception(CommonMethod.GetValidationMessageFromException(ex));
+                    }
+                    catch (Exception ex)
+                    {
+                        dbContext.Rollback();
+                        throw ex;
+                    }
+                }
+            }
+        }
+
+        public async Task<List<DO_WardMaster>> GetWardMasterList()
+        {
+            using (var db = new eSyaEnterprise())
+            {
+                try
+                {
+                    var wr_ms = db.GtEswrms
+                        .AsNoTracking()
+                        .Select(r => new DO_WardMaster
+                        {
+                            WardId = r.WardId,
+                            WardShortDesc = r.WardShortDesc,
+                            WardDesc = r.WardDesc,
+                            ActiveStatus = r.ActiveStatus
+                        }).OrderBy(x => x.WardDesc).ToListAsync();
+
+                    return await wr_ms;
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            }
+        }
+
+        public async Task<List<DO_WardMaster>> GetActiveWardMasterList()
+        {
+            using (var db = new eSyaEnterprise())
+            {
+                try
+                {
+                    var wr_ms = db.GtEswrms
+                        .Where(w => w.ActiveStatus)
+                        .AsNoTracking()
+                        .Select(r => new DO_WardMaster
+                        {
+                            WardId = r.WardId,
+                            WardShortDesc = r.WardShortDesc,
+                            WardDesc = r.WardDesc
+                        }).OrderBy(x => x.WardDesc).ToListAsync();
+
+                    return await wr_ms;
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            }
+        }
+
+        public async Task<DO_WardMaster> GetWardMasterById(int wardId)
+        {
+            using (var db = new eSyaEnterprise())
+            {
+                try
+                {
+                    var wr_ms = db.GtEswrms
+                        .Where(w => w.WardId == wardId)
+                        .AsNoTracking()
+                        .Select(r => new DO_WardMaster
+                        {
+                            WardId = r.WardId,
+                            WardShortDesc = r.WardShortDesc,
+                            WardDesc = r.WardDesc,
+                            ActiveStatus = r.ActiveStatus
+
+                        }).FirstOrDefaultAsync();
+
+                    return await wr_ms;
+                }
+                catch (DbUpdateException ex)
+                {
+                    throw new Exception(CommonMethod.GetValidationMessageFromException(ex));
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            }
+        }
+
+        #endregion Ward Master
+
+        #region Room Master
+
+        public async Task<DO_ReturnParameter> InsertIntoRoomMaster(DO_RoomMaster obj)
+        {
+            using (var db = new eSyaEnterprise())
+            {
+                using (var dbContext = db.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        var isRoomExist = db.GtEswrrm.Where(x => x.RoomDesc.ToUpper().Trim() == obj.RoomDesc.ToUpper().Trim()).Count();
+                        if (isRoomExist > 0)
+                        {
+                            return new DO_ReturnParameter() { Status = false, Message = "Room Description already Exists" };
+                        }
+
+                        isRoomExist = db.GtEswrrm.Where(x => x.RoomShortDesc.ToUpper().Trim() == obj.RoomShortDesc.ToUpper().Trim()).Count();
+                        if (isRoomExist > 0)
+                        {
+                            return new DO_ReturnParameter() { Status = false, Message = "Room Short Description already Exists" };
+                        }
+
+                        int maxRoomId = db.GtEswrrm.Select(w => w.RoomId).DefaultIfEmpty().Max();
+                        int RoomId = maxRoomId + 1;
+
+                        var wr_rm = new GtEswrrm
+                        {
+                            RoomId = RoomId,
+                            Gender = obj.Gender,
+                            RoomShortDesc = obj.RoomShortDesc.Trim(),
+                            RoomDesc = obj.RoomDesc.Trim(),
+                            ActiveStatus = obj.ActiveStatus,
+                            FormId = obj.FormId,
+                            CreatedBy = obj.UserID,
+                            CreatedOn = System.DateTime.Now,
+                            CreatedTerminal = obj.TerminalID,
+                        };
+                        db.GtEswrrm.Add(wr_rm);
+
+                        await db.SaveChangesAsync();
+                        dbContext.Commit();
+                        return new DO_ReturnParameter() { Status = true, Message = "Room Master Created Successfully." };
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        dbContext.Rollback();
+                        throw new Exception(CommonMethod.GetValidationMessageFromException(ex));
+                    }
+                    catch (Exception ex)
+                    {
+                        dbContext.Rollback();
+                        throw ex;
+                    }
+                }
+            }
+        }
+
+        public async Task<DO_ReturnParameter> UpdateRoomMaster(DO_RoomMaster obj)
+        {
+            using (var db = new eSyaEnterprise())
+            {
+                using (var dbContext = db.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        GtEswrrm wr_rm = db.GtEswrrm.Where(w => w.RoomId == obj.RoomId).FirstOrDefault();
+                        if (wr_rm == null)
+                        {
+                            return new DO_ReturnParameter() { Status = false, Message = "Room Id does not exist." };
+                        }
+
+                        var isRoomExist = db.GtEswrrm.Where(x => x.RoomDesc.ToUpper().Trim() == obj.RoomDesc.ToUpper().Trim() && x.RoomId != obj.RoomId).Count();
+                        if (isRoomExist > 0)
+                        {
+                            return new DO_ReturnParameter() { Status = false, Message = "Room Description already Exists" };
+                        }
+
+                        isRoomExist = db.GtEswrrm.Where(x => x.RoomShortDesc.ToUpper().Trim() == obj.RoomShortDesc.ToUpper().Trim() && x.RoomId != obj.RoomId).Count();
+                        if (isRoomExist > 0)
+                        {
+                            return new DO_ReturnParameter() { Status = false, Message = "Room Short Description already Exists" };
+                        }
+
+                        wr_rm.Gender = obj.Gender.Trim();
+                        wr_rm.RoomShortDesc = obj.RoomShortDesc;
+                        wr_rm.RoomDesc = obj.RoomDesc.Trim();
+                        wr_rm.ActiveStatus = obj.ActiveStatus;
+                        wr_rm.ModifiedBy = obj.UserID;
+                        wr_rm.ModifiedOn = System.DateTime.Now;
+                        wr_rm.ModifiedTerminal = obj.TerminalID;
+
+                        await db.SaveChangesAsync();
+                        dbContext.Commit();
+                        return new DO_ReturnParameter() { Status = true, Message = "Room Master Updated Successfully." };
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        dbContext.Rollback();
+                        throw new Exception(CommonMethod.GetValidationMessageFromException(ex));
+                    }
+                    catch (Exception ex)
+                    {
+                        dbContext.Rollback();
+                        throw ex;
+                    }
+                }
+            }
+        }
+
+        public async Task<List<DO_RoomMaster>> GetRoomMasterList()
+        {
+            using (var db = new eSyaEnterprise())
+            {
+                try
+                {
+                    var wr_rm = db.GtEswrrm
+                        .AsNoTracking()
+                        .Select(r => new DO_RoomMaster
+                        {
+                            RoomId = r.RoomId,
+                            Gender = r.Gender,
+                            RoomShortDesc = r.RoomShortDesc,
+                            RoomDesc = r.RoomDesc,
+                            ActiveStatus = r.ActiveStatus
+                        }).OrderBy(x => x.RoomDesc).ToListAsync();
+
+                    return await wr_rm;
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            }
+        }
+
+        public async Task<List<DO_RoomMaster>> GetActiveRoomMasterList()
+        {
+            using (var db = new eSyaEnterprise())
+            {
+                try
+                {
+                    var wr_rm = db.GtEswrrm
+                        .Where(w=> w.ActiveStatus)
+                        .AsNoTracking()
+                        .Select(r => new DO_RoomMaster
+                        {
+                            RoomId = r.RoomId,
+                            Gender = r.Gender,
+                            RoomShortDesc = r.RoomShortDesc,
+                            RoomDesc = r.RoomDesc
+                        }).OrderBy(x => x.RoomDesc).ToListAsync();
+
+                    return await wr_rm;
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            }
+        }
+
+        public async Task<DO_RoomMaster> GetRoomMasterById(int roomId)
+        {
+            using (var db = new eSyaEnterprise())
+            {
+                try
+                {
+                    var wr_rm = db.GtEswrrm
+                        .Where(w => w.RoomId == roomId)
+                        .AsNoTracking()
+                        .Select(r => new DO_RoomMaster
+                        {
+                            RoomId = r.RoomId,
+                            Gender = r.Gender,
+                            RoomShortDesc = r.RoomShortDesc,
+                            RoomDesc = r.RoomDesc,
+                            ActiveStatus = r.ActiveStatus
+                        }).FirstOrDefaultAsync();
+
+                    return await wr_rm;
+                }
+                catch (DbUpdateException ex)
+                {
+                    throw new Exception(CommonMethod.GetValidationMessageFromException(ex));
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            }
+        }
+
+        #endregion Room Master
+
+        #region WardRoom Business Link
+
+        public async Task<DO_ReturnParameter> InsertIntoWardRoomBusinessLink(DO_WardRoomBusinessLink obj)
+        {
+            using (var db = new eSyaEnterprise())
+            {
+                using (var dbContext = db.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        var isWRLinkExist = db.GtEswrbl.Where(x => x.BusinessKey == obj.BusinessKey && x.WardId == obj.WardId && x.RoomId == obj.RoomId).Count();
+                        if (isWRLinkExist > 0)
+                        {
+                            return new DO_ReturnParameter() { Status = false, Message = "Ward Room Business Link already Exists" };
+                        }
+
+                        isWRLinkExist = db.GtEswrbl.Where(x => x.BusinessKey == obj.BusinessKey && x.WardId != obj.WardId && x.RoomId == obj.RoomId).Count();
+                        if (isWRLinkExist > 0)
+                        {
+                            return new DO_ReturnParameter() { Status = false, Message = "Room already Linked with other Ward" };
+                        }
+
+                        var wr_bl = new GtEswrbl
+                        {
+                            BusinessKey = obj.BusinessKey,
+                            WardId = obj.WardId,
+                            RoomId = obj.RoomId,
+                            NoOfBeds = obj.NoOfBeds,
+                            OccupiedBeds = obj.OccupiedBeds,
+                            ConsignmentMarkupPerc = obj.ConsignmentMarkupPerc,
+                            ActiveStatus = obj.ActiveStatus,
+                            FormId = obj.FormId,
+                            CreatedBy = obj.UserID,
+                            CreatedOn = System.DateTime.Now,
+                            CreatedTerminal = obj.TerminalID,
+                        };
+                        db.GtEswrbl.Add(wr_bl);
+
+                        await db.SaveChangesAsync();
+                        dbContext.Commit();
+                        return new DO_ReturnParameter() { Status = true, Message = "Ward Room Business Linked Successfully." };
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        dbContext.Rollback();
+                        throw new Exception(CommonMethod.GetValidationMessageFromException(ex));
+                    }
+                    catch (Exception ex)
+                    {
+                        dbContext.Rollback();
+                        throw ex;
+                    }
+                }
+            }
+        }
+
+        public async Task<DO_ReturnParameter> UpdateWardRoomBusinessLink(DO_WardRoomBusinessLink obj)
+        {
+            using (var db = new eSyaEnterprise())
+            {
+                using (var dbContext = db.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        GtEswrbl wr_bl = db.GtEswrbl.Where(w => w.BusinessKey == obj.BusinessKey && w.WardId == obj.WardId && w.RoomId == obj.RoomId).FirstOrDefault();
+                        if (wr_bl == null)
+                        {
+                            return new DO_ReturnParameter() { Status = false, Message = "Ward Room Business Link does not exist." };
+                        }
+
+                        wr_bl.NoOfBeds = obj.NoOfBeds;
+                        //wr_bl.OccupiedBeds = obj.OccupiedBeds;
+                        wr_bl.ConsignmentMarkupPerc = obj.ConsignmentMarkupPerc;
+                        wr_bl.ActiveStatus = obj.ActiveStatus;
+                        wr_bl.ModifiedBy = obj.UserID;
+                        wr_bl.ModifiedOn = System.DateTime.Now;
+                        wr_bl.ModifiedTerminal = obj.TerminalID;
+
+                        await db.SaveChangesAsync();
+                        dbContext.Commit();
+                        return new DO_ReturnParameter() { Status = true, Message = "Ward Room Business Link Updated Successfully." };
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        dbContext.Rollback();
+                        throw new Exception(CommonMethod.GetValidationMessageFromException(ex));
+                    }
+                    catch (Exception ex)
+                    {
+                        dbContext.Rollback();
+                        throw ex;
+                    }
+                }
+            }
+        }
+
+        public async Task<DO_WardRoomBusinessLink> GetWardRoomBusinessByBkWrRmId(int businessKey, int wardId, int roomId)
+        {
+            using (var db = new eSyaEnterprise())
+            {
+                try
+                {
+                    var wr_bl = db.GtEswrbl
+                        .Where(w => w.BusinessKey == businessKey && w.WardId == wardId  && w.RoomId == roomId)
+                        .AsNoTracking()
+                        .Select(r => new DO_WardRoomBusinessLink
+                        {
+                            NoOfBeds = r.NoOfBeds,
+                            OccupiedBeds = r.OccupiedBeds,
+                            ConsignmentMarkupPerc = r.ConsignmentMarkupPerc,
+                            ActiveStatus = r.ActiveStatus
+                        }).FirstOrDefaultAsync();
+
+                    return await wr_bl;
+                }
+                catch (DbUpdateException ex)
+                {
+                    throw new Exception(CommonMethod.GetValidationMessageFromException(ex));
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            }
+        }
+
+        #endregion WardRoom Business Link
+    }
+}

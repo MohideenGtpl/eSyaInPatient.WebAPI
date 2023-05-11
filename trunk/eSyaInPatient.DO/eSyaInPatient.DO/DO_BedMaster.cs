@@ -1,0 +1,26 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace eSyaInPatient.DO
+{
+    public class DO_BedMaster
+    {
+        public int BusinessKey { get; set; }
+        public int RoomId { get; set; }
+        public string RoomNumber { get; set; }
+        public string BedNumber { get; set; }
+        public int StoreCode { get; set; }
+        public string StoreDesc { get; set; }
+        public int LocationId { get; set; }
+        public string LocationDesc { get; set; }
+        public decimal HospitalNumber { get; set; }
+        public string Gender { get; set; }
+        public string BedStatus { get; set; }
+        public string Remarks { get; set; }
+        public bool ActiveStatus { get; set; }
+        public string FormId { get; set; }
+        public int UserID { get; set; }
+        public string TerminalID { get; set; }
+    }
+}

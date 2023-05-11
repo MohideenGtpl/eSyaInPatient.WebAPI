@@ -1,0 +1,112 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using eSyaInPatient.IF;
+using eSyaInPatient.DO;
+
+
+namespace eSyaInPatient.WebAPI.Controllers
+{
+    [Route("api/[controller]/[action]")]
+    [ApiController]
+    public class WardServicesController : ControllerBase
+    {
+        private readonly IWardServicesRepository _WardServicesRepository;
+
+        public WardServicesController(IWardServicesRepository wardMasterRepository)
+        {
+            _WardServicesRepository = wardMasterRepository;
+        }
+
+        /// <summary>
+        /// Insert into Ward Master Table
+        /// UI Reffered - Ward Master,
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> InsertIntoWardMaster(DO_WardMaster obj)
+        {
+            var msg = await _WardServicesRepository.InsertIntoWardMaster(obj);
+            return Ok(msg);
+        }
+
+        /// <summary>
+        /// Update Ward Master Table
+        /// UI Reffered - Ward Master,
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> UpdateWardMaster(DO_WardMaster obj)
+        {
+            var msg = await _WardServicesRepository.UpdateWardMaster(obj);
+            return Ok(msg);
+        }
+
+        /// <summary>
+        /// Get Ward Master List
+        /// UI Reffered - Ward Master,
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetWardMasterList()
+        {
+            var msg = await _WardServicesRepository.GetWardMasterList();
+            return Ok(msg);
+        }
+
+        /// <summary>
+        /// Get Ward Master By Ward Id
+        /// UI Reffered - Ward Master,
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetWardMasterById(int wardId)
+        {
+            var msg = await _WardServicesRepository.GetWardMasterById(wardId);
+            return Ok(msg);
+        }
+
+        /// <summary>
+        /// Insert into Room Master Table
+        /// UI Reffered - Room Master,
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> InsertIntoRoomMaster(DO_RoomMaster obj)
+        {
+            var msg = await _WardServicesRepository.InsertIntoRoomMaster(obj);
+            return Ok(msg);
+        }
+
+        /// <summary>
+        /// Update Room Master Table
+        /// UI Reffered - Room Master,
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> UpdateRoomMaster(DO_RoomMaster obj)
+        {
+            var msg = await _WardServicesRepository.UpdateRoomMaster(obj);
+            return Ok(msg);
+        }
+
+        /// <summary>
+        /// Get Room Master List
+        /// UI Reffered - Room Master,
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetRoomMasterList()
+        {
+            var msg = await _WardServicesRepository.GetRoomMasterList();
+            return Ok(msg);
+        }
+
+        /// <summary>
+        /// Get Room Master By Room Id
+        /// UI Reffered - Room Master,
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetRoomMasterById(int roomId)
+        {
+            var msg = await _WardServicesRepository.GetRoomMasterById(roomId);
+            return Ok(msg);
+        }
+
+    }
+}

@@ -1,0 +1,37 @@
+﻿using eSyaInPatient.DO;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace eSyaInPatient.IF
+{
+    public interface IWardServicesRepository
+    {
+        Task<DO_ReturnParameter> InsertIntoWardMaster(DO_WardMaster obj);
+
+        Task<DO_ReturnParameter> UpdateWardMaster(DO_WardMaster obj);
+
+        Task<List<DO_WardMaster>> GetWardMasterList();
+
+        Task<List<DO_WardMaster>> GetActiveWardMasterList();
+
+        Task<DO_WardMaster> GetWardMasterById(int wardId);
+
+        Task<DO_ReturnParameter> InsertIntoRoomMaster(DO_RoomMaster obj);
+
+        Task<DO_ReturnParameter> UpdateRoomMaster(DO_RoomMaster obj);
+
+        Task<List<DO_RoomMaster>> GetRoomMasterList();
+
+        Task<List<DO_RoomMaster>> GetActiveRoomMasterList();
+
+        Task<DO_RoomMaster> GetRoomMasterById(int roomId);
+
+        Task<DO_ReturnParameter> InsertIntoWardRoomBusinessLink(DO_WardRoomBusinessLink obj);
+
+        Task<DO_ReturnParameter> UpdateWardRoomBusinessLink(DO_WardRoomBusinessLink obj);
+
+        Task<DO_WardRoomBusinessLink> GetWardRoomBusinessByBkWrRmId(int businessKey, int wardId, int roomId);
+    }
+}
